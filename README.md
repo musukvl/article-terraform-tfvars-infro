@@ -7,16 +7,16 @@ canonical_url: null
 id: 2118591
 date: '2024-11-23T18:36:19Z'
 ---
- 
+
 
 In our company we have thousands of resources managed by Terraform. Which are deployed to multiple environments (dev, staging, production) and different regions.
 
-The key principles we have for our Terraform codebase are: 
+The key principles we have for our Terraform codebase are:
 1. Use the same Terraform codebase (.tf files) for all environments (dev, stage, prod).
 2. All environment specific settings should be managed via Terraform variable files (.tfvars).
 
 Below is an our typical Terraform codebase structure:
- 
+
 ```tree
 src/
 ├── environments/
@@ -44,13 +44,14 @@ Each environment has corresponding terraform state.
 ```
 The `terraform apply` command to run apply for specific environment will be:
 ```bash
+
 terraform apply -var-file="src/environments/dev.tfvars" -state="dev.tfstate"
 terraform apply -var-file="src/environments/stage.tfvars" -state="stage.tfstate"
 terraform apply -var-file="src/environments/prod.tfvars" -state="prod.tfstate"
+
 ```
 
-
-![Terraform Variables and State Flow](tfvars.png)
+![Terraform Variables and State Flow](https://raw.githubusercontent.com/musukvl/article-terraform-tfvars-infro/refs/heads/main/tfvars.png)
 
 # Feature flags
 
