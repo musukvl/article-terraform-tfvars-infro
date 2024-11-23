@@ -14,7 +14,7 @@ The key principles we have for our Terraform codebase are:
 2. All environment specific settings should be managed via Terraform variable files (.tfvars).
 
 Below is an our typical Terraform codebase structure:
-
+ 
 ```tree
 src/
 ├── environments/
