@@ -1,5 +1,5 @@
 ---
-title: Multi-environment with terraform variables file
+title: Multi-environment infrastructure with terraform variables files
 published: true
 description: The article describes the approach to manage multi-environment Terraform codebase with `.tfvars` files.
 tags: terraform
