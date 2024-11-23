@@ -9,7 +9,6 @@ date: '2024-11-23T18:36:19Z'
 cover_image: ./logo.jpg
 ---
 
-
 In our company we have thousands of resources managed by Terraform. Which are deployed to multiple environments (dev, staging, production) and different regions.
 
 The key principles we have for our Terraform codebase are:
@@ -32,8 +31,26 @@ src/
 └── ...
 ```
 
-The .tfvars files contains environment specific settings, for example,
-`src/environments/dev.tfvars` content:
+`variables.tf` file contains the variables definitions:
+```hcl
+variable "resource_group_name" {
+  description = "The resource group name to deploy db server"
+  type = string
+}
+
+variable "location" {
+  description = "The db server location"
+  type = string
+}
+
+variable "enable_replication" {
+  description = "Enable DB replication of resources to other region"
+  type = bool
+}
+```
+
+`src/environments/dev.tfvars` contains the environment specific settings:
+
 
 ```hcl
 resource_group_name = "rg-dev"
@@ -48,6 +65,8 @@ terraform apply -var-file="src/environments/dev.tfvars" -state="dev.tfstate"
 terraform apply -var-file="src/environments/stage.tfvars" -state="stage.tfstate"
 terraform apply -var-file="src/environments/prod.tfvars" -state="prod.tfstate"
 ```
+
+If you use terraform cloud, you probably need to specify workspace name with `TF_WORKSPACE` environment variable instead of state file.
 
 ![Terraform Variables and State Flow](https://raw.githubusercontent.com/musukvl/article-terraform-tfvars-infro/refs/heads/main/tfvars.png)
 
@@ -96,33 +115,58 @@ module "replica_rg" {
 }
 ```
 
-# `.tfvars` files design
+# Terraform variables as DSL
 
-The `.tfvars` file becomes another layer of abstraction: instead of defining particular resources we define environment entities, feature settings. In fact, variables for  `.tfvars` become a DSL for environment configuration.
-For example, the definition for CI/CD build agents could look like this:
+The terraform variables definitions becomes another layer of abstraction: instead of defining particular resources we define business entities and feature settings. 
+In fact, `.tfvars` files management becomes programming on DSL language defined by terraform variables blocks..
+For example, the definition for CI/CD build agents: 
 
+`variables.tf`:
 ```hcl
-build_agents = {
-    windows_pool = {
-        number_of_vms = 10
-        vm_size = "Standard_D2_v2"
-    }
-    linux_pool = {
-        number_of_vms = 5
-        vm_size = "Standard_D2_v2"
-    }
+variable "build_agents" {
+  description = "Build agents settings"
+  type = map(object({
+    number_of_vms = number
+    vm_size = optional(string, "Standard_N2_v2")
+    private_network_access = optional(bool, false) # limit access to agent vms
+  }))
 }
 ```
 
-This approach allows to separate feature definition and the feature implementation.
-If allows to keep all operation configs in one place. For example, if ci/cd admin needs to increase number of agents he don't need to search for particular resource in terraform codebase to change the settings. He just changes the `.tfvars` file. 
+`dev.tfvars`:
+```hcl
+build_agents = {    
+    build_pool = {
+        number_of_vms = 10
+        vm_size = "Standard_D2_v2"
+        private_network_access = false
+    }
+    deployment_pool = {
+        number_of_vms = 5
+        vm_size = "Standard_D2_v2"
+        private_network_access = true
+    }
+}
+```
+Here we are not defining azure resources, but our infrastructure assets, which, in fact could be implemented differently.
 
-Naming for the terraform variables and object properties is a challenge. Time to time we need to do `.tfvars` refactorings to change objects structure, or introduce the new properties for all objects. 
-Such refactoring has a two stages:
+## Control interface
 
-1. Modifying all `.tfvars` files.
-2. Modifying terraform code to support the changes.
-3. Generating [moved blocks](https://developer.hashicorp.com/terraform/language/moved) in terraform code.
+The `.tfvars` approach allows to define the control interface for infrastructure operators.
+So the settings in `.tfvars` are working like control panel in pilot cockpit hiding the underlying resources and their dependencies. 
+For example, if ci/cd admin needs to increase number of agents he don't need to search for resources he needs to reconfigure in terraform codebase. He just changes the `number_of_vms` in `.tfvars` file.
+
+## Refactoring
+
+Naming for the terraform variables and object properties is a challenge. 
+Time to time we need to do refactoring of variables to change objects structure, or introduce the new properties for all objects. Which also leads changes in all `.tfvars` files and states.
+
+Normally, such refactoring has the following steps:
+
+1. Modifying variables definitions in `variables.tf` file.
+2. Modifying all `.tfvars` files.
+3. Modifying terraform code to support the changes.
+4. Generating [moved blocks](https://developer.hashicorp.com/terraform/language/moved) in terraform code.
 
 For `.tfvars` modification and code generation you can  use python libraries like
 [python-hcl2](https://pypi.org/project/python-hcl2).
@@ -137,3 +181,5 @@ Sometimes it is important to keep original formatting so the library collects in
 # Conclusion
 
 I think the `.tfvars` files approach is a good way to manage multi-environment Terraform codebase for huge projects. It allows naturally to implement feature flags and truck based development for Infrastructure as Code.
+
+The article repository: [https://github.com/musukvl/article-terraform-tfvars-infro](https://github.com/musukvl/article-terraform-tfvars-infro)
