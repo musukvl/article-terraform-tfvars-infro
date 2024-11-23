@@ -1,4 +1,11 @@
-# Terraform variables file
+---
+title: Multi-environment with terraform variables file
+published: true
+description: Multi-environment with terraform variables file
+tags: terraform
+canonical_url: null
+---
+ 
 
 In our company we have thousands of resources managed by Terraform. Which are deployed to multiple environments (dev, staging, production) and different regions.
 
@@ -36,9 +43,12 @@ Each environment has corresponding terraform state.
 The `terraform apply` command to run apply for specific environment will be:
 ```bash
 terraform apply -var-file="src/environments/dev.tfvars" -state="dev.tfstate"
+terraform apply -var-file="src/environments/stage.tfvars" -state="stage.tfstate"
+terraform apply -var-file="src/environments/prod.tfvars" -state="prod.tfstate"
 ```
 
 
+![Terraform Variables and State Flow](tfvars.png)
 
 # Feature flags
 
