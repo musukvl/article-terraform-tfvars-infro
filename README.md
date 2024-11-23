@@ -1,11 +1,12 @@
 ---
 title: Multi-environment with terraform variables file
 published: false
-description: Multi-environment with terraform variables file
+description: The article describes the approach to manage multi-environment Terraform codebase with `.tfvars` files.
 tags: terraform
 canonical_url: null
 id: 2118591
 date: '2024-11-23T18:36:19Z'
+cover_image: ./logo.jpg
 ---
 
 
@@ -60,4 +61,76 @@ The Terraform variables file can also store feature flags together with terrafor
 
 This approach allows to test the Terraform code in the dev and stage environment before it is applied to other environments. If staging and production environments have the same settings we can have the same code coverage for production.
 
+Terraform has no if-else logic, so the only way to implement feature flags is to use `for_each` and `count` statements. 
+
+In the following example we create an azure resource group and role assignments if the `enable_replication` variable is `true`:
+
+```hcl
+variable "enable_replication" {
+  type = bool
+}
+
+resource "azurerm_resource_group" "replica_rg" {
+  count = var.enable_replication ? 1 : 0
+  name     = "replica-rg"
+  location = var.location   
+}
+
+resource "azurerm_role_assignment" "role_assignments" {
+  count = var.enable_replication ? 1 : 0
+  scope                = azurerm_resource_group.replica_rg[0].id
+  role_definition_name = "Contributor"
+  principal_id         = "12345678-1234-1234-1234-123456789"  
+}
+```
+
+This approach is not perfect, because count condition should be added to each dependent resource. Better to group dependent resources into the local module, to have a single count condition for entire module. For example:
+
+```hcl
+variable "enable_replication" {
+  type = bool
+}
+
+module "replica_rg" {
+  source = "./modules/replica_rg"
+  count = var.enable_replication ? 1 : 0
+  rg_name     = "replica-rg"
+  contributor_id = "12345678-1234-1234-1234-123456789"
+}
+```
+
+# `.tfvars` files design
+
+The `.tfvars` file becomes another layer of abstraction: instead of defining particular resources we define environment entities, feature settings. In fact, variables for  `.tfvars` become a DSL for environment configuration.
+For example, the definition for CI/CD build agents could look like this:
+
+```hcl
+build_agents = {
+    windows_pool = {
+        number_of_vms = 10
+        vm_size = "Standard_D2_v2"
+    }
+    linux_pool = {
+        number_of_vms = 5
+        vm_size = "Standard_D2_v2"
+    }
+}
+```
+
+This approach allows to separate feature definition and the feature implementation.
+If allows to keep all operation configs in one place. For example, if ci/cd admin needs to increase number of agents he don't need to search for particular resource in terraform codebase to change the settings. He just changes the `.tfvars` file. 
+
+Naming for the terraform variables and object properties is a challenge. Time to time we need to do `.tfvars` refactorings to change objects structure, or introduce the new properties for all objects. 
+Such refactoring has a two stages:
+
+1. Modifying all `.tfvars` files.
+2. Modifying terraform code to support the changes.
+3. Generating [moved blocks](https://developer.hashicorp.com/terraform/language/moved) in terraform code.
+
+For `.tfvars` modification and code generation you can  use python libraries like
+[python-hcl2](https://pypi.org/project/python-hcl2).
+Unfortunately, hcl2 parsers are not available for many other languages, so previously I converted `.tfvars` to json and used json as an intermediate format.
+I used this go application which is a wrapper over official Hashicorp hcl2 go library: [https://github.com/musukvl/tfvars-parser](https://github.com/musukvl/tfvars-parser) 
+
+Recently I created my own C# library to work with `.tfvars` files: [amba-tfvars](https://github.com/musukvl/amba-tfvars). The library focused on `.tfvars` file refactoring. So you can extract not only hcl2 data, but also code comments from `.tfvars` files, which could be very important to keep during the `.tfvars` files transformation.
 
