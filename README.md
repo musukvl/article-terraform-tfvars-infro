@@ -1,6 +1,6 @@
 ---
 title: Multi-environment with terraform variables file
-published: false
+published: true
 description: The article describes the approach to manage multi-environment Terraform codebase with `.tfvars` files.
 tags: terraform
 canonical_url: null
