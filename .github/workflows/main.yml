@@ -2,9 +2,9 @@ name: publish-devto
 on:
   workflow_dispatch:
   push:
-    branches: [master]
+    branches: [main]
   pull_request:
-    branches: [master]
+    branches: [main]
 
 jobs:
   my_job:
@@ -23,6 +23,6 @@ jobs:
         devto_key: ${{ secrets.SECRET_DEVTO_TOKEN }} # the secret you setup
         github_token: ${{ secrets.GITHUB_TOKEN }} # this is an inbuilt secret by github
         files: 'README.md'
-        branch: master
+        branch: main
         conventional_commits: true
         dry_run: false # set this to true if you want to do a dry run
