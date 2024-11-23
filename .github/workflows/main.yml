@@ -1,0 +1,28 @@
+name: publish-devto
+on:
+  workflow_dispatch:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  my_job:
+    name: Push article to Dev.to
+    runs-on: ubuntu-latest # ubuntu costs half the price of windows
+
+    permissions:
+      contents: write # this lets the bot update the post in github    
+
+    steps:
+    - uses: actions/checkout@v3 # checks out my code to the actions build    
+
+    - name: Publish article on Dev.to    
+      uses: sinedied/publish-devto@v2
+      with:
+        devto_key: ${{ secrets.SECRET_DEVTO_TOKEN }} # the secret you setup
+        github_token: ${{ secrets.GITHUB_TOKEN }} # this is an inbuilt secret by github
+        files: 'README.md'
+        branch: master
+        conventional_commits: true
+        dry_run: false # set this to true if you want to do a dry run
