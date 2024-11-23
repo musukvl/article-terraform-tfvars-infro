@@ -34,22 +34,19 @@ src/
 
 The .tfvars files contains environment specific settings, for example,
 `src/environments/dev.tfvars` content:
+
 ```hcl
 resource_group_name = "rg-dev"
 location = "eastus"
 enable_replication = false
 ```
 
-Each environment has corresponding terraform state.
+Each environment has corresponding terraform state. So we need to specify the state file and `.tfvars` file to run `terraform apply` command for specific environment:
 
-```
-The `terraform apply` command to run apply for specific environment will be:
 ```bash
-
 terraform apply -var-file="src/environments/dev.tfvars" -state="dev.tfstate"
 terraform apply -var-file="src/environments/stage.tfvars" -state="stage.tfstate"
 terraform apply -var-file="src/environments/prod.tfvars" -state="prod.tfstate"
-
 ```
 
 ![Terraform Variables and State Flow](https://raw.githubusercontent.com/musukvl/article-terraform-tfvars-infro/refs/heads/main/tfvars.png)
@@ -132,5 +129,11 @@ For `.tfvars` modification and code generation you can  use python libraries lik
 Unfortunately, hcl2 parsers are not available for many other languages, so previously I converted `.tfvars` to json and used json as an intermediate format.
 I used this go application which is a wrapper over official Hashicorp hcl2 go library: [https://github.com/musukvl/tfvars-parser](https://github.com/musukvl/tfvars-parser) 
 
-Recently I created my own C# library to work with `.tfvars` files: [amba-tfvars](https://github.com/musukvl/amba-tfvars). The library focused on `.tfvars` file refactoring. So you can extract not only hcl2 data, but also code comments from `.tfvars` files, which could be very important to keep during the `.tfvars` files transformation.
+Recently I created my own C# dotnet library to work with `.tfvars` files: [amba-tfvars](https://github.com/musukvl/amba-tfvars). 
+The library focused on `.tfvars` file refactoring. 
+It can extract not only terraform variables data, but also code comments from `.tfvars` files, which could be very important to keep during the `.tfvars` files transformation.
+Sometimes it is important to keep original formatting so the library collects information about original maps and lists code style: if they were one-liners, or each property has its own line.
 
+# Conclusion
+
+I think the `.tfvars` files approach is a good way to manage multi-environment Terraform codebase for huge projects. It allows naturally to implement feature flags and truck based development for Infrastructure as Code.
