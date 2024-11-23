@@ -4,6 +4,8 @@ published: true
 description: Multi-environment with terraform variables file
 tags: terraform
 canonical_url: null
+id: 2118591
+date: '2024-11-23T18:36:19Z'
 ---
  
 
